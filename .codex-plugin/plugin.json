@@ -27,7 +27,8 @@
         "developerName": "Brandon Apol",
         "category": "Productivity",
         "capabilities": ["Read", "Write"],
-        "websiteURL": "https://github.com/brandonapol/pdf-client-report",
+        "websiteURL": "https://pdf-client-report-6it6p.ondigitalocean.app/",
+        "supportURL": "https://github.com/brandonapol/pdf-client-report/issues",
         "privacyPolicyURL": "https://github.com/brandonapol/pdf-client-report/blob/main/PRIVACY.md",
         "termsOfServiceURL": "https://github.com/brandonapol/pdf-client-report/blob/main/LICENSE",
         "defaultPrompt": [

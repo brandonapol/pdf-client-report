@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Client Weekly Report</title>
+    <meta name="description" content="A ChatGPT plugin that turns a metrics CSV into a one-page Friday client report PDF." />
+    <style>
+      :root {
+        --bg: #f7f8fa;
+        --card: #ffffff;
+        --text: #1a1d21;
+        --muted: #4b5160;
+        --line: #dde1e8;
+        --brand: #1f4b99;
+        --code: #eef1f6;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #111317;
+          --card: #1a1d23;
+          --text: #e8eaee;
+          --muted: #a3a9b6;
+          --line: #2c313a;
+          --brand: #7aa2e8;
+          --code: #23272f;
+        }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 ui-sans-serif, system-ui, sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: 48px 16px 64px; }
+      h1 { font-size: 30px; line-height: 1.2; margin: 0 0 8px; }
+      h2 { font-size: 18px; margin: 36px 0 8px; }
+      p, li { color: var(--muted); }
+      .lede { font-size: 18px; margin: 0 0 24px; }
+      .mark { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--brand); margin-right: 8px; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+      code { background: var(--code); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+      pre { background: var(--code); padding: 12px 14px; border-radius: 8px; overflow-x: auto; margin: 8px 0 0; }
+      ol, ul { padding-left: 20px; }
+      a { color: var(--brand); }
+      footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+      footer a { margin-right: 16px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1><span class="mark"></span>Client Weekly Report</h1>
+      <p class="lede">A ChatGPT plugin that turns this week's metrics CSV into a one-page Friday client report: what moved, what to do next, and a PDF you review before it goes out.</p>
+
+      <div class="card">
+        <strong>MCP endpoint</strong>
+        <p style="margin: 4px 0 0"><code>https://pdf-client-report-6it6p.ondigitalocean.app/mcp</code></p>
+      </div>
+
+      <h2>How it works</h2>
+      <ol>
+        <li>Ask ChatGPT for this week's client report and attach a metrics CSV.</li>
+        <li>The plugin ranks week-over-week movers from the numbers you gave it. It never guesses a missing baseline.</li>
+        <li>You review the headline, what moved, and the next actions, and correct anything.</li>
+        <li>It renders a one-page PDF and gives you a download link that expires after 15 minutes.</li>
+      </ol>
+
+      <h2>CSV format</h2>
+      <p><code>metric</code> and <code>value</code> are required. <code>previous</code> is what makes a change real.</p>
+      <pre>metric,value,previous,unit,note
+Paid search sessions,1840,1210,sessions,Brand campaign launched Tuesday
+Email clicks,210,260,clicks,Send went out late</pre>
+
+      <h2>Your data</h2>
+      <p>The CSV is processed in memory. Each rendered PDF is held in memory for 15 minutes behind an unguessable link, and nothing is written to disk. See the <a href="https://github.com/brandonapol/pdf-client-report/blob/main/PRIVACY.md">privacy policy</a>.</p>
+
+      <footer>
+        <a href="https://github.com/brandonapol/pdf-client-report">Source</a>
+        <a href="https://github.com/brandonapol/pdf-client-report/issues">Support</a>
+        <a href="https://github.com/brandonapol/pdf-client-report/blob/main/PRIVACY.md">Privacy</a>
+        <a href="https://github.com/brandonapol/pdf-client-report/blob/main/LICENSE">Terms</a>
+        <p>Built by Brandon Apol.</p>
+      </footer>
+    </main>
+  </body>
+</html>

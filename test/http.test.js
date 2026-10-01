@@ -150,3 +150,27 @@ test("uses PUBLIC_URL for download links when set", () =>
       delete process.env.PUBLIC_URL;
     }
   }));
+
+test("serves the website at the root", () =>
+  withServer(async (base) => {
+    const res = await fetch(`${base}/`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get("content-type"), /^text\/html/);
+    const html = await res.text();
+    assert.match(html, /<title>Client Weekly Report<\/title>/);
+    assert.match(html, /https:\/\/pdf-client-report-6it6p\.ondigitalocean\.app\/mcp/);
+  }));
+
+test("answers the openai domain challenge only when configured", () =>
+  withServer(async (base) => {
+    const path = `${base}/.well-known/openai-apps-challenge`;
+    assert.equal((await fetch(path)).status, 404);
+    process.env.OPENAI_APPS_CHALLENGE = "token-123";
+    try {
+      const res = await fetch(path);
+      assert.equal(res.headers.get("content-type"), "text/plain");
+      assert.equal(await res.text(), "token-123");
+    } finally {
+      delete process.env.OPENAI_APPS_CHALLENGE;
+    }
+  }));

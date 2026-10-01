@@ -50,7 +50,9 @@ npm start   # node src/http.js, listens on $PORT (default 8080)
 ```
 
 - `POST /mcp` is the MCP endpoint.
+- `GET /` is the plugin's website, the listing's `websiteURL`.
 - `GET /healthz` returns `ok`.
+- `GET /.well-known/openai-apps-challenge` returns `$OPENAI_APPS_CHALLENGE` for directory domain verification, and 404s when it is unset.
 - `render_client_report_pdf` returns a `download_url` under `/files/` instead of base64. Links are held in memory and expire after 15 minutes. Set `PUBLIC_URL` if the host does not forward `X-Forwarded-Proto`.
 
 ## Plugin package

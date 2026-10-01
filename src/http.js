@@ -1,19 +1,25 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { handleMessage } from "./server.js";
 import { isEntryPoint } from "./entry.js";
 
 const MAX_BODY = 5 * 1024 * 1024;
 const PDF_TTL_MS = 15 * 60 * 1000;
 const pdfs = new Map();
+const SITE = readFileSync(new URL("../ui/site.html", import.meta.url), "utf8");
 
 export function createApp() {
   return createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://localhost");
-      if (url.pathname === "/" || url.pathname === "/healthz") {
-        return send(res, 200, "text/plain", "ok\n");
+      if (url.pathname === "/") return send(res, 200, "text/html; charset=utf-8", SITE);
+      if (url.pathname === "/healthz") return send(res, 200, "text/plain", "ok\n");
+      if (url.pathname === "/.well-known/openai-apps-challenge") {
+        // OpenAI's domain verification for directory submission; the token comes from the dashboard.
+        const token = process.env.OPENAI_APPS_CHALLENGE;
+        return token ? send(res, 200, "text/plain", token) : send(res, 404, "text/plain", "Not found\n");
       }
       if (url.pathname === "/mcp") {
         if (req.method !== "POST") {

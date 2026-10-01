@@ -23,12 +23,19 @@ test("package, plugin, and server versions match", () => {
 
 test("the listing has the fields the directory shows", () => {
   const ui = plugin.extensions["com.openai"].interface;
-  for (const key of ["displayName", "shortDescription", "longDescription", "developerName", "privacyPolicyURL", "termsOfServiceURL"]) {
+  for (const key of ["displayName", "shortDescription", "longDescription", "developerName", "websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"]) {
     assert.ok(typeof ui[key] === "string" && ui[key].trim(), key);
   }
   assert.match(ui.brandColor, /^#[0-9A-F]{6}$/i);
   assert.ok(ui.shortDescription.length <= 60, "shortDescription should fit a card");
   assert.ok(ui.defaultPrompt.length >= 1);
+});
+
+test("every listing url is https", () => {
+  const ui = plugin.extensions["com.openai"].interface;
+  for (const key of ["websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"]) {
+    assert.match(ui[key], /^https:\/\//, key);
+  }
 });
 
 test("policy links point at files that exist in this repo", () => {
