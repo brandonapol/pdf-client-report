@@ -8,7 +8,8 @@
     "pdf-client-report": "./src/server.js"
   },
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node src/http.js",
+    "stdio": "node src/server.js",
     "report": "node src/cli.js",
     "test": "node --test"
   },

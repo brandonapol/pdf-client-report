@@ -1,8 +1,11 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
 import { draftReport } from "./report.js";
 import { renderPdf } from "./pdf.js";
 
 const SERVER = { name: "pdf-client-report", version: "0.1.0" };
+const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
+const READ_ONLY = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
 const tools = [
   {
@@ -19,11 +22,12 @@ const tools = [
       },
       required: ["client", "csv"],
     },
+    annotations: READ_ONLY,
   },
   {
     name: "render_client_report_pdf",
     description:
-      "Render an already drafted client report as a one-page Friday PDF. Pass the draft JSON. Returns base64 PDF bytes.",
+      "Render an already drafted client report as a one-page Friday PDF. Pass the draft JSON. Returns a download link, or base64 PDF bytes when run locally.",
     inputSchema: {
       type: "object",
       properties: {
@@ -31,10 +35,11 @@ const tools = [
       },
       required: ["report"],
     },
+    annotations: READ_ONLY,
   },
 ];
 
-export function handleMessage(message) {
+export function handleMessage(message, options = {}) {
   if (!message || message.jsonrpc !== "2.0") return null;
   if (message.method === "notifications/initialized" || message.method === "notifications/cancelled") {
     return null;
@@ -44,14 +49,16 @@ export function handleMessage(message) {
   try {
     if (message.method === "initialize") {
       return result(message.id, {
-        protocolVersion: "2024-11-05",
+        protocolVersion: PROTOCOL_VERSIONS.includes(message.params?.protocolVersion)
+          ? message.params.protocolVersion
+          : PROTOCOL_VERSIONS[0],
         capabilities: { tools: {}, resources: {} },
         serverInfo: SERVER,
       });
     }
     if (message.method === "ping") return result(message.id, {});
     if (message.method === "tools/list") return result(message.id, { tools });
-    if (message.method === "tools/call") return result(message.id, callTool(message.params ?? {}));
+    if (message.method === "tools/call") return result(message.id, callTool(message.params ?? {}, options));
     if (message.method === "resources/list") {
       return result(message.id, {
         resources: [
@@ -72,7 +79,7 @@ export function handleMessage(message) {
   }
 }
 
-function callTool({ name, arguments: args = {} }) {
+function callTool({ name, arguments: args = {} }, { publishPdf }) {
   if (name === "draft_client_report") {
     const report = draftReport(args);
     return {
@@ -88,6 +95,16 @@ function callTool({ name, arguments: args = {} }) {
     if (!args.report) throw new Error("report is required");
     const pdf = renderPdf(args.report);
     const filename = `${slug(args.report.client)}-weekly-report.pdf`;
+    if (publishPdf) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ filename, mimeType: "application/pdf", ...publishPdf(pdf, filename) }),
+          },
+        ],
+      };
+    }
     return {
       content: [
         {
@@ -104,9 +121,8 @@ function callTool({ name, arguments: args = {} }) {
   throw new Error(`Unknown tool: ${name}`);
 }
 
-async function readResource({ uri }) {
+function readResource({ uri }) {
   if (uri !== "ui://client-report/review") throw new Error(`Unknown resource: ${uri}`);
-  const { readFileSync } = await import("node:fs");
   const html = readFileSync(new URL("../ui/review.html", import.meta.url), "utf8");
   return { contents: [{ uri, mimeType: "text/html", text: html }] };
 }

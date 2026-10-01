@@ -37,9 +37,21 @@ Tools:
 - `draft_client_report` returns the headline, movers, next actions, and table.
 - `render_client_report_pdf` renders the confirmed draft.
 
+## Hosted endpoint
+
+ChatGPT connects over streamable HTTP, not stdio:
+
+```bash
+npm start   # node src/http.js, listens on $PORT (default 8080)
+```
+
+- `POST /mcp` is the MCP endpoint.
+- `GET /healthz` returns `ok`.
+- `render_client_report_pdf` returns a `download_url` under `/files/` instead of base64. Links are held in memory and expire after 15 minutes. Set `PUBLIC_URL` if the host does not forward `X-Forwarded-Proto`.
+
 ## Directory submission
 
-Public listing needs a hosted streamable HTTP MCP endpoint on a domain you verify. This repo ships the stdio server and the skill so the workflow can be reviewed locally first. Do not point the directory at a placeholder URL.
+Public listing needs the hosted endpoint on a domain you verify. Do not point the directory at a placeholder URL.
 
 ## Git
 

@@ -23,6 +23,6 @@ Activate on phrases like:
 2. Call `draft_client_report`. Do not invent the deltas.
 3. Show the headline, what moved, and what to do next. Ask the user to correct anything before export.
 4. Call `render_client_report_pdf` with the confirmed draft.
-5. Return the PDF as `client-weekly-report.pdf`. Do not paste the base64 into the chat.
+5. If the result has a `download_url`, give the user that link and say it expires in 15 minutes. Otherwise return the PDF as `client-weekly-report.pdf`. Do not paste the base64 into the chat.
 
 If a prior week is missing, say so. Do not fill the gap with a guess.
