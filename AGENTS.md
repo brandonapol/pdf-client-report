@@ -11,6 +11,7 @@ A ChatGPT/Codex plugin that turns a metrics CSV into a one-page Friday client re
 | Path | Role |
 | --- | --- |
 | `src/csv.js` | CSV parsing, number cleanup, `change()`, formatting |
+| `src/exports.js` | `readMetrics()`: wide platform exports (GA4, Google Ads, Meta, Mailchimp) and the `previousCsv` merge |
 | `src/report.js` | `draftReport()`: ranks movers, writes headline, moved lines, next actions |
 | `src/pdf.js` | `renderPdf()`: validates the draft, hand-writes a one-page PDF 1.4 |
 | `src/server.js` | MCP JSON-RPC handler (`handleMessage`) and the stdio transport |

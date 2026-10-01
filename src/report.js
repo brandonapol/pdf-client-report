@@ -1,9 +1,12 @@
-import { change, formatNumber, formatPct, parseMetricRows } from "./csv.js";
+import { change, formatNumber, formatPct } from "./csv.js";
+import { readMetrics } from "./exports.js";
 
-export function draftReport({ client, period, csv, rows, preparedFor } = {}) {
-  const metrics = parseMetricRows(rows ?? csv ?? "");
+export function draftReport({ client, period, csv, rows, previousCsv, preparedFor } = {}) {
+  const metrics = readMetrics({ csv, rows, previousCsv });
   if (metrics.length === 0) {
-    throw new Error("No metrics found. Expected columns metric,value and optional previous,unit,note.");
+    throw new Error(
+      "No metrics found. Expected columns metric,value and optional previous,unit,note, or a platform export (GA4, Google Ads, Meta Ads, Mailchimp) with one column per metric.",
+    );
   }
 
   const ranked = metrics
@@ -42,10 +45,14 @@ function movedLine(metric) {
 
 function nextActions(metrics) {
   const actions = [];
+  const missing = metrics.filter((metric) => metric.previous == null).map((metric) => metric.name);
+  let askedForBaselines = false;
   for (const metric of metrics) {
     if (actions.length >= 3) break;
     if (metric.previous == null) {
-      actions.push(`Add a prior-week baseline for ${metric.name} before the next report.`);
+      // One line for every missing baseline, so an export without last week doesn't fill the section with the same ask.
+      if (!askedForBaselines) actions.push(`Add a prior-week baseline for ${namesList(missing)} before the next report.`);
+      askedForBaselines = true;
     } else if (metric.pct <= -0.1) {
       actions.push(`Investigate the drop in ${metric.name} before next week's send.`);
     } else if (metric.pct >= 0.1) {
@@ -56,6 +63,12 @@ function nextActions(metrics) {
     actions.push("Hold the current mix. No metric moved more than 10%.");
   }
   return actions.slice(0, 3);
+}
+
+function namesList(names) {
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names[0]}, ${names[1]} and ${names.length - 2} more metrics`;
 }
 
 function presentMetric(metric) {

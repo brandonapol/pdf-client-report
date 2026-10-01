@@ -19,11 +19,14 @@ Activate on phrases like:
 
 ## Workflow
 
-1. Get the client name and the metrics CSV. Required columns are `metric` and `value`. Optional columns are `previous`, `unit`, and `note`.
-2. Call `draft_client_report`. Do not invent the deltas.
-3. Show the headline, what moved, and what to do next. Ask the user to correct anything before export.
-4. Call `render_client_report_pdf` with the confirmed draft.
-5. If the result has a `download_url`, give the user that link and say it expires in 15 minutes. Otherwise save the PDF under the `filename` the tool returns, such as `acme-weekly-report.pdf`. Do not paste the base64 into the chat.
+1. Get the client name and the metrics CSV. Either shape works:
+   - A simple CSV with `metric` and `value`, and optional `previous`, `unit`, and `note`.
+   - A raw export from GA4, Google Ads, Meta Ads, or Mailchimp, passed unchanged as `csv`. Do not reshape it yourself.
+2. If the user has last week's export too, pass it unchanged as `previousCsv`. If they don't, ask once whether they can export the prior period, because without it nothing has a baseline.
+3. Call `draft_client_report`. Do not invent the deltas.
+4. Show the headline, what moved, and what to do next. Ask the user to correct anything before export.
+5. Call `render_client_report_pdf` with the confirmed draft.
+6. If the result has a `download_url`, give the user that link and say it expires in 15 minutes. Otherwise save the PDF under the `filename` the tool returns, such as `acme-weekly-report.pdf`. Do not paste the base64 into the chat.
 
 If a tool result has `isError: true`, tell the user what was wrong with the input in plain words and ask for the fix. Do not retry with made-up data.
 

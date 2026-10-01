@@ -1,6 +1,21 @@
 const NUMBER = /^-?\d+(?:\.\d+)?$/;
 
 export function parseCsv(text) {
+  const rows = parseRows(text);
+  if (rows.length === 0) return [];
+
+  const headers = rows[0].map((header) => header.toLowerCase());
+  return rows.slice(1).map((cells) => {
+    const record = {};
+    headers.forEach((header, index) => {
+      record[header] = cells[index] ?? "";
+    });
+    return record;
+  });
+}
+
+// Raw rows of trimmed cells, blank lines dropped. Platform exports need this because their header isn't on line one.
+export function parseRows(text) {
   const rows = [];
   let row = [];
   let field = "";
@@ -37,16 +52,7 @@ export function parseCsv(text) {
   }
   row.push(field.trim());
   if (row.some((cell) => cell !== "")) rows.push(row);
-  if (rows.length === 0) return [];
-
-  const headers = rows[0].map((header) => header.toLowerCase());
-  return rows.slice(1).map((cells) => {
-    const record = {};
-    headers.forEach((header, index) => {
-      record[header] = cells[index] ?? "";
-    });
-    return record;
-  });
+  return rows;
 }
 
 export function parseMetricRows(input) {
@@ -79,7 +85,7 @@ function first(record, keys) {
   return "";
 }
 
-function number(value) {
+export function number(value) {
   if (typeof value === "number") return value;
   const cleaned = String(value ?? "").replace(/[%,$\s]/g, "").replace(/,/g, "");
   if (!NUMBER.test(cleaned)) return NaN;
