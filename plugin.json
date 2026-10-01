@@ -1,0 +1,42 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "pdf-client-report",
+  "version": "0.1.0",
+  "description": "Turn a metrics CSV into this week's client report: a one-page Friday PDF with what moved and what to do next.",
+  "author": {
+    "name": "Brandon Apol",
+    "url": "https://github.com/brandonapol"
+  },
+  "homepage": "https://github.com/brandonapol/pdf-client-report",
+  "repository": "https://github.com/brandonapol/pdf-client-report",
+  "license": "MIT",
+  "keywords": [
+    "client report",
+    "weekly report",
+    "friday report",
+    "pdf",
+    "csv",
+    "agency"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Client Weekly Report",
+        "shortDescription": "Write this week's client report as a one-page PDF",
+        "longDescription": "Draft a Friday client one-pager from a metrics CSV. The plugin computes what moved, suggests what to do next, and exports a reviewable PDF. It does not typeset arbitrary chat text.",
+        "developerName": "Brandon Apol",
+        "category": "Productivity",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://github.com/brandonapol/pdf-client-report",
+        "privacyPolicyURL": "https://github.com/brandonapol/pdf-client-report/blob/main/PRIVACY.md",
+        "termsOfServiceURL": "https://github.com/brandonapol/pdf-client-report/blob/main/LICENSE",
+        "defaultPrompt": [
+          "Write this week's client report from this CSV.",
+          "Turn this export into a Friday client PDF.",
+          "Make the weekly client one-pager for Acme."
+        ],
+        "brandColor": "#1F4B99"
+      }
+    }
+  }
+}

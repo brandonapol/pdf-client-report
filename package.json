@@ -1,0 +1,19 @@
+{
+  "name": "pdf-client-report",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ChatGPT plugin that turns a metrics CSV into a Friday client one-pager PDF.",
+  "bin": {
+    "pdf-client-report": "./src/server.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "report": "node src/cli.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
