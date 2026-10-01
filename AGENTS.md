@@ -19,7 +19,7 @@ A ChatGPT/Codex plugin that turns a metrics CSV into a one-page Friday client re
 | `src/cli.js` | Local CLI that writes `<client>-weekly-report.pdf` |
 | `skills/client-weekly-report/SKILL.md` | Instructions the host model follows |
 | `plugin.json`, `.codex-plugin/plugin.json` | Directory manifest. The two files must be identical |
-| `mcp.json` | How Codex and ChatGPT developer mode launch the stdio server |
+| `mcp.json` | Points the plugin at the hosted streamable HTTP endpoint on DigitalOcean |
 | `ui/review.html` | `ui://client-report/review` resource |
 | `test/` | `node:test` suites, one per module plus `stdio`, `cli`, `manifest` |
 

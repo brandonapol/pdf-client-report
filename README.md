@@ -30,10 +30,10 @@ node src/cli.js examples/acme-weekly.csv Acme "Week of Sep 28"
 
 That writes `acme-weekly-report.pdf` next to the working directory.
 
-Codex and ChatGPT developer mode can launch the stdio server from `mcp.json`. It speaks MCP stdio: one JSON-RPC message per line.
+`mcp.json` points clients at the hosted endpoint below. To run the tools locally over stdio instead (one JSON-RPC message per line):
 
 ```bash
-node src/server.js
+npm run stdio
 ```
 
 Tools:
@@ -52,6 +52,14 @@ npm start   # node src/http.js, listens on $PORT (default 8080)
 - `POST /mcp` is the MCP endpoint.
 - `GET /healthz` returns `ok`.
 - `render_client_report_pdf` returns a `download_url` under `/files/` instead of base64. Links are held in memory and expire after 15 minutes. Set `PUBLIC_URL` if the host does not forward `X-Forwarded-Proto`.
+
+## Plugin package
+
+```bash
+npm run package
+```
+
+That zips the committed manifests, `mcp.json`, and the skill into `dist/client-weekly-report-plugin.zip` for the ChatGPT plugin importer. Commit first; it packages `HEAD`.
 
 ## Directory submission
 

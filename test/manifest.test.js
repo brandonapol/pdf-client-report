@@ -39,9 +39,13 @@ test("policy links point at files that exist in this repo", () => {
   }
 });
 
-test("mcp.json launches a server file that exists", () => {
+test("mcp.json points at a reachable server definition", () => {
   const { mcpServers } = readJson("mcp.json");
   for (const server of Object.values(mcpServers)) {
+    if (server.type === "streamable-http") {
+      assert.match(server.url, /^https:\/\/[^/]+\/mcp$/);
+      continue;
+    }
     const script = server.args[0].replace("${PLUGIN_ROOT}/", "");
     assert.ok(existsSync(new URL(script, root)), script);
   }
