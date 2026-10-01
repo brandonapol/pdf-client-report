@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import { isEntryPoint } from "./entry.js";
 import { draftReport } from "./report.js";
 import { renderPdf } from "./pdf.js";
 
@@ -58,7 +59,13 @@ export function handleMessage(message, options = {}) {
     }
     if (message.method === "ping") return result(message.id, {});
     if (message.method === "tools/list") return result(message.id, { tools });
-    if (message.method === "tools/call") return result(message.id, callTool(message.params ?? {}, options));
+    if (message.method === "tools/call") {
+      const name = message.params?.name;
+      if (!tools.some((tool) => tool.name === name)) {
+        return error(message.id, -32602, `Unknown tool: ${name}`);
+      }
+      return result(message.id, callToolSafely(message.params, options));
+    }
     if (message.method === "resources/list") {
       return result(message.id, {
         resources: [
@@ -79,6 +86,15 @@ export function handleMessage(message, options = {}) {
   }
 }
 
+// Bad input comes back as an isError result, not a protocol error, so the model can read it and retry.
+function callToolSafely(params, options) {
+  try {
+    return callTool(params, options);
+  } catch (err) {
+    return { isError: true, content: [{ type: "text", text: err.message }] };
+  }
+}
+
 function callTool({ name, arguments: args = {} }, { publishPdf }) {
   if (name === "draft_client_report") {
     const report = draftReport(args);
@@ -92,7 +108,7 @@ function callTool({ name, arguments: args = {} }, { publishPdf }) {
     };
   }
   if (name === "render_client_report_pdf") {
-    if (!args.report) throw new Error("report is required");
+    if (!args.report || typeof args.report !== "object") throw new Error("report is required");
     const pdf = renderPdf(args.report);
     const filename = `${slug(args.report.client)}-weekly-report.pdf`;
     if (publishPdf) {
@@ -131,7 +147,7 @@ function slug(value) {
   return String(value || "client")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/^-|-$/g, "") || "client";
 }
 
 function result(id, value) {
@@ -142,39 +158,20 @@ function error(id, code, message) {
   return { jsonrpc: "2.0", id, error: { code, message } };
 }
 
+// MCP stdio transport: one JSON-RPC message per line. Nothing else may go to stdout.
 function start() {
-  let buffer = Buffer.alloc(0);
+  let buffer = "";
+  process.stdin.setEncoding("utf8");
   process.stdin.on("data", (chunk) => {
-    buffer = Buffer.concat([buffer, chunk]);
-    buffer = drain(buffer);
-  });
-}
-
-function drain(buffer) {
-  while (buffer.length > 0) {
-    const headerEnd = buffer.indexOf("\r\n\r\n");
-    if (headerEnd === -1) {
-      if (buffer[0] === 0x7b) return drainJson(buffer);
-      return buffer;
+    buffer += chunk;
+    let newline = buffer.indexOf("\n");
+    while (newline !== -1) {
+      const line = buffer.slice(0, newline).trim();
+      buffer = buffer.slice(newline + 1);
+      if (line) dispatch(line);
+      newline = buffer.indexOf("\n");
     }
-    const header = buffer.slice(0, headerEnd).toString("utf8");
-    const match = header.match(/Content-Length:\s*(\d+)/i);
-    if (!match) return Buffer.alloc(0);
-    const length = Number(match[1]);
-    const startAt = headerEnd + 4;
-    if (buffer.length < startAt + length) return buffer;
-    dispatch(buffer.slice(startAt, startAt + length).toString("utf8"));
-    buffer = buffer.slice(startAt + length);
-  }
-  return buffer;
-}
-
-function drainJson(buffer) {
-  const text = buffer.toString("utf8");
-  const newline = text.indexOf("\n");
-  if (newline === -1) return buffer;
-  dispatch(text.slice(0, newline));
-  return drain(Buffer.from(text.slice(newline + 1)));
+  });
 }
 
 function dispatch(raw) {
@@ -182,6 +179,7 @@ function dispatch(raw) {
   try {
     message = JSON.parse(raw);
   } catch {
+    writeMessage(error(null, -32700, "Parse error"));
     return;
   }
   const response = handleMessage(message);
@@ -189,10 +187,7 @@ function dispatch(raw) {
 }
 
 function writeMessage(message) {
-  const json = JSON.stringify(message);
-  const body = Buffer.from(json);
-  process.stdout.write(`Content-Length: ${body.length}\r\n\r\n`);
-  process.stdout.write(body);
+  process.stdout.write(`${JSON.stringify(message)}\n`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) start();
+if (isEntryPoint(import.meta.url)) start();

@@ -2,6 +2,7 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { handleMessage } from "./server.js";
+import { isEntryPoint } from "./entry.js";
 
 const MAX_BODY = 5 * 1024 * 1024;
 const PDF_TTL_MS = 15 * 60 * 1000;
@@ -51,7 +52,7 @@ async function handleMcp(req, res) {
 function publishPdf(req, pdf, filename) {
   sweep();
   const id = randomUUID();
-  pdfs.set(id, { pdf, expires: Date.now() + PDF_TTL_MS });
+  pdfs.set(id, { pdf, filename, expires: Date.now() + PDF_TTL_MS });
   const base = process.env.PUBLIC_URL || `${req.headers["x-forwarded-proto"] || "http"}://${req.headers.host}`;
   return {
     download_url: `${base.replace(/\/$/, "")}/files/${id}/${encodeURIComponent(filename)}`,
@@ -65,7 +66,7 @@ function servePdf(res, id) {
   if (!entry) return send(res, 404, "text/plain", "This report link has expired.\n");
   res.writeHead(200, {
     "Content-Type": "application/pdf",
-    "Content-Disposition": "attachment",
+    "Content-Disposition": `attachment; filename="${entry.filename}"`,
     "Cache-Control": "no-store",
   });
   return res.end(entry.pdf);
@@ -103,7 +104,7 @@ function send(res, status, type, body) {
   return res.end(body);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntryPoint(import.meta.url)) {
   const port = Number(process.env.PORT) || 8080;
   createApp().listen(port, "0.0.0.0", () => {
     console.log(`pdf-client-report MCP listening on :${port}/mcp`);
