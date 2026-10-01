@@ -14,7 +14,7 @@ A ChatGPT/Codex plugin that turns a metrics CSV into a one-page Friday client re
 | `src/report.js` | `draftReport()`: ranks movers, writes headline, moved lines, next actions |
 | `src/pdf.js` | `renderPdf()`: validates the draft, hand-writes a one-page PDF 1.4 |
 | `src/server.js` | MCP JSON-RPC handler (`handleMessage`) and the stdio transport |
-| `src/http.js` | Streamable HTTP transport, `/mcp`, `/healthz`, expiring `/files/` links, the `/` website, and the OpenAI domain challenge |
+| `src/http.js` | Streamable HTTP transport, `/mcp`, `/healthz`, expiring `/files/` links, the `/` website, the OpenAI domain challenge, per-client rate limits, and token-gated `/stats` counts |
 | `src/entry.js` | `isEntryPoint()`, so scripts start when launched through a symlink |
 | `src/cli.js` | Local CLI that writes `<client>-weekly-report.pdf` |
 | `skills/client-weekly-report/SKILL.md` | Instructions the host model follows |
