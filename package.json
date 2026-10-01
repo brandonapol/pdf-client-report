@@ -12,10 +12,12 @@
     "stdio": "node src/server.js",
     "package": "mkdir -p dist && git archive --format=zip -o dist/client-weekly-report-plugin.zip HEAD plugin.json .codex-plugin mcp.json skills README.md PRIVACY.md LICENSE",
     "report": "node src/cli.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/**\" --test-coverage-lines=90 --test-coverage-branches=85 --test-coverage-functions=85",
+    "check": "node --check src/cli.js && node --check src/csv.js && node --check src/entry.js && node --check src/http.js && node --check src/pdf.js && node --check src/report.js && node --check src/server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "license": "MIT"
 }

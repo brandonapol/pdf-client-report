@@ -77,3 +77,76 @@ test("reads the review resource", () =>
     });
     assert.match((await res.json()).result.contents[0].text, /Friday client report/);
   }));
+
+test("serves health checks and rejects other paths and methods", () =>
+  withServer(async (base) => {
+    assert.equal(await (await fetch(`${base}/healthz`)).text(), "ok\n");
+    const get = await fetch(`${base}/mcp`);
+    assert.equal(get.status, 405);
+    assert.equal(get.headers.get("allow"), "POST");
+    assert.equal((await fetch(`${base}/nope`)).status, 404);
+  }));
+
+test("returns a parse error for invalid json", () =>
+  withServer(async (base) => {
+    const res = await fetch(`${base}/mcp`, { method: "POST", body: "{nope" });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error.code, -32700);
+  }));
+
+test("answers json-rpc batches in order", () =>
+  withServer(async (base) => {
+    const res = await rpc(base, [
+      { jsonrpc: "2.0", id: 1, method: "ping" },
+      { jsonrpc: "2.0", method: "notifications/initialized" },
+      { jsonrpc: "2.0", id: 2, method: "tools/list" },
+    ]);
+    const body = await res.json();
+    assert.deepEqual(
+      body.map((item) => item.id),
+      [1, 2],
+    );
+  }));
+
+test("rejects bodies over 5 MB", () =>
+  withServer(async (base) => {
+    const res = await fetch(`${base}/mcp`, { method: "POST", body: "x".repeat(5 * 1024 * 1024 + 1) }).catch((err) => err);
+    if (res instanceof Error) return; // the server may drop the socket before the client finishes sending
+    assert.equal(res.status, 400);
+  }));
+
+test("names the download and expires unknown links", () =>
+  withServer(async (base) => {
+    const rendered = await (
+      await rpc(base, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "render_client_report_pdf", arguments: { report: { client: "Acme" } } },
+      })
+    ).json();
+    const { download_url } = JSON.parse(rendered.result.content[0].text);
+    const pdf = await fetch(download_url);
+    assert.equal(pdf.headers.get("content-disposition"), 'attachment; filename="acme-weekly-report.pdf"');
+    assert.equal(pdf.headers.get("cache-control"), "no-store");
+    const missing = await fetch(`${base}/files/00000000-0000-0000-0000-000000000000/x.pdf`);
+    assert.equal(missing.status, 404);
+  }));
+
+test("uses PUBLIC_URL for download links when set", () =>
+  withServer(async (base) => {
+    process.env.PUBLIC_URL = "https://reports.example.com/";
+    try {
+      const rendered = await (
+        await rpc(base, {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: { name: "render_client_report_pdf", arguments: { report: { client: "Acme" } } },
+        })
+      ).json();
+      assert.match(JSON.parse(rendered.result.content[0].text).download_url, /^https:\/\/reports\.example\.com\/files\/[0-9a-f-]{36}\/acme-weekly-report\.pdf$/);
+    } finally {
+      delete process.env.PUBLIC_URL;
+    }
+  }));
