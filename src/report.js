@@ -29,6 +29,9 @@ function headlineFor(metric) {
 }
 
 function movedLine(metric) {
+  if (metric.previous === 0) {
+    return `${metric.name} went from 0 to ${formatNumber(metric.value)}${suffix(metric)}.`;
+  }
   if (metric.pct == null) {
     return `${metric.name} is ${formatNumber(metric.value)}${suffix(metric)} with no prior week.`;
   }
@@ -41,7 +44,7 @@ function nextActions(metrics) {
   const actions = [];
   for (const metric of metrics) {
     if (actions.length >= 3) break;
-    if (metric.pct == null) {
+    if (metric.previous == null) {
       actions.push(`Add a prior-week baseline for ${metric.name} before the next report.`);
     } else if (metric.pct <= -0.1) {
       actions.push(`Investigate the drop in ${metric.name} before next week's send.`);
@@ -65,8 +68,14 @@ function presentMetric(metric) {
     unit: metric.unit,
     note: metric.note,
     valueLabel: `${formatNumber(metric.value)}${suffix(metric)}`,
-    changeLabel: metric.pct == null ? "no baseline" : formatPct(metric.pct),
+    changeLabel: changeLabel(metric),
   };
+}
+
+function changeLabel(metric) {
+  if (metric.previous == null) return "no baseline";
+  if (metric.pct == null) return metric.delta === 0 ? "0%" : "new from 0";
+  return formatPct(metric.pct);
 }
 
 function suffix(metric) {
