@@ -1,0 +1,46 @@
+# Client Weekly Report
+
+ChatGPT plugin that turns a metrics CSV into this week's client report. It is not a generic PDF maker. It ranks week-over-week movers, writes what to do next, and exports a one-page Friday PDF after review.
+
+Trigger phrases the skill listens for:
+
+- write this week's client report
+- Friday client report
+- turn this CSV into a client report
+
+## CSV
+
+```csv
+metric,value,previous,unit,note
+Paid search sessions,1840,1210,sessions,Brand campaign launched Tuesday
+Email clicks,210,260,clicks,Send went out late
+```
+
+`metric` and `value` are required. `previous` is what makes the delta real. Missing priors are reported as no baseline, not guessed.
+
+## Local use
+
+```bash
+node src/cli.js examples/acme-weekly.csv Acme "Week of Sep 28"
+```
+
+That writes `acme-weekly-report.pdf` next to the working directory.
+
+Codex and ChatGPT developer mode can launch the stdio server from `mcp.json`:
+
+```bash
+node src/server.js
+```
+
+Tools:
+
+- `draft_client_report` returns the headline, movers, next actions, and table.
+- `render_client_report_pdf` renders the confirmed draft.
+
+## Directory submission
+
+Public listing needs a hosted streamable HTTP MCP endpoint on a domain you verify. This repo ships the stdio server and the skill so the workflow can be reviewed locally first. Do not point the directory at a placeholder URL.
+
+## Git
+
+`main` is the release branch. CI runs `npm test` on every push and pull request. There are no runtime dependencies.
