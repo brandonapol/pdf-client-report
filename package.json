@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node src/http.js",
     "stdio": "node src/server.js",
+    "package": "mkdir -p dist && git archive --format=zip -o dist/client-weekly-report-plugin.zip HEAD plugin.json .codex-plugin mcp.json skills README.md PRIVACY.md LICENSE",
     "report": "node src/cli.js",
     "test": "node --test"
   },
