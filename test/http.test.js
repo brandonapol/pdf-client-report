@@ -174,3 +174,95 @@ test("answers the openai domain challenge only when configured", () =>
       delete process.env.OPENAI_APPS_CHALLENGE;
     }
   }));
+
+async function withApp(options, fn) {
+  const server = createApp(options).listen(0);
+  await new Promise((resolve) => server.once("listening", resolve));
+  try {
+    await fn(`http://127.0.0.1:${server.address().port}`);
+  } finally {
+    server.close();
+  }
+}
+
+function callTool(base, id) {
+  return rpc(base, {
+    jsonrpc: "2.0",
+    id,
+    method: "tools/call",
+    params: { name: "draft_client_report", arguments: { client: "Acme", csv: "metric,value\nVisits,10" } },
+  }).then((res) => res.json());
+}
+
+test("rate limits tool calls per client as a readable tool error", () =>
+  withApp({ toolCallsPerMinute: 2 }, async (base) => {
+    assert.equal((await callTool(base, 1)).result.isError, undefined);
+    assert.equal((await callTool(base, 2)).result.isError, undefined);
+    const limited = await callTool(base, 3);
+    assert.equal(limited.id, 3);
+    assert.equal(limited.result.isError, true);
+    assert.match(limited.result.content[0].text, /Too many reports.*try again in \d+ seconds/);
+    const ping = await (await rpc(base, { jsonrpc: "2.0", id: 4, method: "ping" })).json();
+    assert.deepEqual(ping.result, {});
+  }));
+
+test("keys the rate limit on the platform's connecting ip header", () =>
+  withApp({ toolCallsPerMinute: 1 }, async (base) => {
+    const call = (ip) =>
+      fetch(`${base}/mcp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "do-connecting-ip": ip },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "draft_client_report", arguments: { client: "A", csv: "metric,value\nV,1" } } }),
+      }).then((res) => res.json());
+    assert.equal((await call("1.1.1.1")).result.isError, undefined);
+    assert.equal((await call("2.2.2.2")).result.isError, undefined);
+    assert.equal((await call("1.1.1.1")).result.isError, true);
+  }));
+
+test("keeps only the newest stored pdfs", () =>
+  withApp({ maxStoredPdfs: 1 }, async (base) => {
+    const render = async (id) =>
+      JSON.parse(
+        (
+          await (
+            await rpc(base, { jsonrpc: "2.0", id, method: "tools/call", params: { name: "render_client_report_pdf", arguments: { report: { client: "Acme" } } } })
+          ).json()
+        ).result.content[0].text,
+      ).download_url;
+    const first = await render(1);
+    const second = await render(2);
+    assert.equal((await fetch(first)).status, 404);
+    assert.equal((await fetch(second)).status, 200);
+  }));
+
+test("hides usage stats unless a token is configured and sent", () =>
+  withApp({}, async (base) => {
+    assert.equal((await fetch(`${base}/stats`)).status, 404);
+    process.env.STATS_TOKEN = "secret";
+    try {
+      assert.equal((await fetch(`${base}/stats`)).status, 401);
+      assert.equal((await fetch(`${base}/stats`, { headers: { Authorization: "Bearer nope" } })).status, 401);
+    } finally {
+      delete process.env.STATS_TOKEN;
+    }
+  }));
+
+test("counts tool calls by day without keeping report contents", () =>
+  withApp({ toolCallsPerMinute: 3 }, async (base) => {
+    await callTool(base, 1);
+    await rpc(base, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "draft_client_report", arguments: {} } });
+    await rpc(base, { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "render_client_report_pdf", arguments: { report: { client: "Acme" } } } });
+    await callTool(base, 4);
+    process.env.STATS_TOKEN = "secret";
+    try {
+      const res = await fetch(`${base}/stats`, { headers: { Authorization: "Bearer secret" } });
+      assert.equal(res.status, 200);
+      const stats = await res.json();
+      const today = new Date().toISOString().slice(0, 10);
+      assert.deepEqual(stats.days[today], { draft_client_report: 1, render_client_report_pdf: 1, tool_errors: 1, rate_limited: 1 });
+      assert.match(stats.since, /^\d{4}-\d{2}-\d{2}T/);
+      assert.doesNotMatch(JSON.stringify(stats), /Acme|Visits/);
+    } finally {
+      delete process.env.STATS_TOKEN;
+    }
+  }));
