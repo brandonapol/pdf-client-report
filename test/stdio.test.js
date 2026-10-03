@@ -15,16 +15,20 @@ function startServer(path = serverPath) {
   let stdout = "";
   let stderr = "";
   const waiting = [];
-  child.stdout.setEncoding("utf8");
-  child.stderr.setEncoding("utf8").on("data", (chunk) => (stderr += chunk));
-  child.stdout.on("data", (chunk) => {
-    stdout += chunk;
+  // A fast reply can land before nextLine() runs. Leave it buffered and the reader waits for a chunk that never comes.
+  const drain = () => {
     let newline;
     while ((newline = stdout.indexOf("\n")) !== -1 && waiting.length) {
       const line = stdout.slice(0, newline);
       stdout = stdout.slice(newline + 1);
       waiting.shift()(line);
     }
+  };
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8").on("data", (chunk) => (stderr += chunk));
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+    drain();
   });
   return {
     send(message) {
@@ -37,6 +41,7 @@ function startServer(path = serverPath) {
           clearTimeout(timer);
           resolve(line);
         });
+        drain();
       });
     },
     stop() {
@@ -73,6 +78,15 @@ test("handles messages split across chunks and several in one chunk", async (t) 
   server.send(`${ping.slice(10)}\n${JSON.stringify({ jsonrpc: "2.0", id: 2, method: "ping" })}\n`);
   assert.equal(JSON.parse(await server.nextLine()).id, 1);
   assert.equal(JSON.parse(await server.nextLine()).id, 2);
+});
+
+test("delivers a stdio response that arrived before the reader waited", async (t) => {
+  const server = startServer();
+  t.after(() => server.stop());
+  server.send({ jsonrpc: "2.0", id: 7, method: "ping" });
+  // Ping returns immediately. Wait so the line is sitting in the buffer before anyone asks for it.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  assert.equal(JSON.parse(await server.nextLine()).id, 7);
 });
 
 test("answers malformed json with a parse error and keeps serving", async (t) => {
