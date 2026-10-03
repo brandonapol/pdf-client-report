@@ -14,7 +14,7 @@
     "report": "node src/cli.js",
     "test": "node --test",
     "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/**\" --test-coverage-lines=90 --test-coverage-branches=85 --test-coverage-functions=85",
-    "check": "node --check src/cli.js && node --check src/csv.js && node --check src/entry.js && node --check src/http.js && node --check src/pdf.js && node --check src/report.js && node --check src/server.js"
+    "check": "node --check src/cli.js && node --check src/csv.js && node --check src/entry.js && node --check src/exports.js && node --check src/http.js && node --check src/pdf.js && node --check src/report.js && node --check src/server.js"
   },
   "engines": {
     "node": ">=22"

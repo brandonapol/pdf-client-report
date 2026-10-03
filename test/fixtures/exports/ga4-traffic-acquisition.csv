@@ -1,0 +1,21 @@
+# ----------------------------------------
+# Traffic acquisition: Session primary channel group (Default Channel Group)
+# Account: Acme
+# Property: Acme Web
+# ----------------------------------------
+#
+# All Users
+# Start date: 20260921
+# End date: 20260927
+Session primary channel group (Default Channel Group),Sessions,Engaged sessions,Engagement rate,Average engagement time per session,Events per session,Event count,Key events,Total revenue
+Organic Search,960,610,0.635,52.1,6.2,5952,14,0
+Paid Search,1840,1102,0.599,41.7,5.1,9384,22,1250.5
+Direct,420,233,0.555,38.0,4.8,2016,3,0
+Email,130,98,0.754,61.3,7.0,910,4,0
+
+# ----------------------------------------
+# Nth day
+# ----------------------------------------
+Nth day,Sessions
+0000,410
+0001,522

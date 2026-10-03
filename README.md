@@ -18,6 +18,16 @@ Email clicks,210,260,clicks,Send went out late
 
 `metric` and `value` are required. `previous` is what makes the delta real. Missing priors are reported as no baseline, not guessed. A prior of `0` is reported as new from 0.
 
+### Platform exports
+
+A raw CSV export from GA4, Google Ads, Meta Ads Manager, or Mailchimp works as-is, with no cleanup. Preamble lines and `#` comment blocks are skipped, and only the first table is read. Each numeric column becomes a metric:
+
+- If the export has a total row (`Total: Account`, `Grand total`), its values are used.
+- A single-row export is taken as-is.
+- Otherwise columns are summed across rows, but only columns that can be added. Rates, averages, cost-per, reach, users, results, IDs, dates and budgets are skipped rather than summed into a wrong number.
+
+Pass the prior period's export as `previousCsv` to fill `previous` by metric name. A metric missing from it stays at no baseline.
+
 Header aliases: `name`/`kpi` for `metric`, `current`/`this_week` for `value`, `prior`/`last_week` for `previous`, `notes` for `note`. Values may include `$`, `%` and thousands separators.
 
 The PDF always fits on one page. Past about 20 metrics, the table ends with "+ N more metrics not shown".

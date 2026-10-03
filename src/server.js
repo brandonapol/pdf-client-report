@@ -12,13 +12,20 @@ const tools = [
   {
     name: "draft_client_report",
     description:
-      "Draft this week's client report from a metrics CSV. Returns the headline, what moved, what to do next, and the metric table. Does not render the PDF.",
+      "Draft this week's client report from a metrics CSV or a raw GA4, Google Ads, Meta Ads, or Mailchimp export. Pass last week's export as previousCsv to compute what moved. Returns the headline, what moved, what to do next, and the metric table. Does not render the PDF.",
     inputSchema: {
       type: "object",
       properties: {
         client: { type: "string", description: "Client name, such as Acme." },
         period: { type: "string", description: "Report period, such as Week of Sep 28." },
-        csv: { type: "string", description: "CSV with metric,value and optional previous,unit,note columns." },
+        csv: {
+          type: "string",
+          description: "CSV with metric,value and optional previous,unit,note columns, or a platform export with one column per metric, pasted unchanged.",
+        },
+        previousCsv: {
+          type: "string",
+          description: "Optional. The same export for the prior period. Fills previous for metrics with the same name; anything missing stays without a baseline.",
+        },
         preparedFor: { type: "string", description: "Optional recipient." },
       },
       required: ["client", "csv"],
