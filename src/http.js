@@ -9,6 +9,8 @@ const MAX_BODY = 5 * 1024 * 1024;
 const PDF_TTL_MS = 15 * 60 * 1000;
 const TOOL_CALLS_PER_MINUTE = 30;
 const MAX_STORED_PDFS = 500;
+const MAX_CLIENT_NAME = 64;
+const MAX_CLIENT_NAMES = 50;
 const SITE = readFileSync(new URL("../ui/site.html", import.meta.url), "utf8");
 
 export function createApp(options = {}) {
@@ -16,7 +18,7 @@ export function createApp(options = {}) {
     pdfs: new Map(),
     maxStoredPdfs: options.maxStoredPdfs ?? MAX_STORED_PDFS,
     limiter: createLimiter(options.toolCallsPerMinute ?? TOOL_CALLS_PER_MINUTE),
-    stats: { since: new Date().toISOString(), days: {} },
+    stats: { since: new Date().toISOString(), days: {}, clients: {} },
   };
   return createServer(async (req, res) => {
     try {
@@ -66,6 +68,7 @@ async function handleMcp(req, res, state) {
 
 // Only tool calls do real work, so only they spend the client's budget; initialize and list stay free.
 function handleCounted(message, options, client, state) {
+  if (message?.method === "initialize") countClient(state.stats, message.params?.clientInfo?.name);
   if (message?.method !== "tools/call" || message.id == null) return handleMessage(message, options);
   const day = state.stats.days[today()] ??= { draft_client_report: 0, render_client_report_pdf: 0, tool_errors: 0, rate_limited: 0 };
   const wait = state.limiter.take(client);
@@ -81,6 +84,15 @@ function handleCounted(message, options, client, state) {
   if (response?.result?.isError) day.tool_errors += 1;
   else if (message.params?.name in day) day[message.params.name] += 1;
   return response;
+}
+
+// Stateless HTTP means only initialize announces who is calling, so count the name there.
+// Names are caller-supplied: trim, cap the length, and fold extras into "other" so the table stays bounded.
+function countClient(stats, name) {
+  const table = stats.clients[today()] ??= {};
+  let key = typeof name === "string" && name.trim() ? name.trim().slice(0, MAX_CLIENT_NAME) : "unknown";
+  if (!(key in table) && Object.keys(table).length >= MAX_CLIENT_NAMES) key = "other";
+  table[key] = (table[key] ?? 0) + 1;
 }
 
 // Token bucket per client: a full minute's budget up front, refilled continuously.

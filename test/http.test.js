@@ -266,3 +266,38 @@ test("counts tool calls by day without keeping report contents", () =>
       delete process.env.STATS_TOKEN;
     }
   }));
+
+test("counts connections by the client name they announce", () =>
+  withApp({}, async (base) => {
+    const init = (name) =>
+      rpc(base, { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: name === undefined ? undefined : { name } } });
+    await init("openai-mcp");
+    await init("openai-mcp");
+    await init("  grok  ");
+    await init(undefined);
+    await init("x".repeat(500));
+    process.env.STATS_TOKEN = "secret";
+    try {
+      const stats = await (await fetch(`${base}/stats`, { headers: { Authorization: "Bearer secret" } })).json();
+      const today = new Date().toISOString().slice(0, 10);
+      assert.deepEqual(stats.clients[today], { "openai-mcp": 2, grok: 1, unknown: 1, ["x".repeat(64)]: 1 });
+    } finally {
+      delete process.env.STATS_TOKEN;
+    }
+  }));
+
+test("stops adding new client names once the table is full", () =>
+  withApp({}, async (base) => {
+    for (let i = 0; i < 60; i++) {
+      await rpc(base, { jsonrpc: "2.0", id: 1, method: "initialize", params: { clientInfo: { name: `c${i}` } } });
+    }
+    process.env.STATS_TOKEN = "secret";
+    try {
+      const stats = await (await fetch(`${base}/stats`, { headers: { Authorization: "Bearer secret" } })).json();
+      const today = new Date().toISOString().slice(0, 10);
+      assert.equal(Object.keys(stats.clients[today]).length, 51);
+      assert.equal(stats.clients[today].other, 10);
+    } finally {
+      delete process.env.STATS_TOKEN;
+    }
+  }));
