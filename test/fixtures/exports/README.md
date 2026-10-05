@@ -1,0 +1,1 @@
+Synthetic exports modeled on each platform's CSV layout (preamble lines, one row per channel or campaign, total rows, `--` for empty cells). The numbers are made up. Replace or add real anonymized exports when available; the tests assert on the parsed metrics, not on the layout.

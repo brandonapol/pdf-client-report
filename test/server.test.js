@@ -110,3 +110,20 @@ test("ignores non-jsonrpc input and notifications without an id", () => {
   assert.equal(handleMessage({ jsonrpc: "2.0", method: "notifications/cancelled" }), null);
   assert.equal(handleMessage({ jsonrpc: "2.0", method: "tools/list" }), null);
 });
+
+test("drafts from a platform export with last week's export as the baseline", () => {
+  const fixture = (name) => readFileSync(new URL(`./fixtures/exports/${name}`, import.meta.url), "utf8");
+  const response = handleMessage({
+    jsonrpc: "2.0",
+    id: 9,
+    method: "tools/call",
+    params: {
+      name: "draft_client_report",
+      arguments: { client: "Acme", csv: fixture("google-ads-campaigns.csv"), previousCsv: fixture("google-ads-campaigns-previous.csv") },
+    },
+  });
+  const report = JSON.parse(response.result.content[0].text);
+  const clicks = report.metrics.find((metric) => metric.name === "Clicks");
+  assert.ok(clicks, "Clicks metric present");
+  assert.doesNotMatch(JSON.stringify(clicks), /no baseline/i);
+});

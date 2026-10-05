@@ -106,3 +106,10 @@ test("draft output is plain json that round-trips", () => {
   const report = draftReport({ client: "Acme", period: "Week of Sep 28", csv: readFileSync(new URL("../examples/acme-weekly.csv", import.meta.url), "utf8") });
   assert.deepEqual(JSON.parse(JSON.stringify(report)), report);
 });
+
+test("asks for missing baselines once instead of once per metric", () => {
+  const report = draftReport({ csv: "metric,value\nOpens,10\nClicks,4\nBounces,2\nUnsubscribes,1\n" });
+  assert.deepEqual(report.next, ["Add a prior-week baseline for Opens, Clicks and 2 more metrics before the next report."]);
+  const two = draftReport({ csv: "metric,value,previous\nOpens,10,\nClicks,4,\nLeads,9,6\n" });
+  assert.deepEqual(two.next, ["Keep the budget or effort that lifted Leads.", "Add a prior-week baseline for Opens and Clicks before the next report."]);
+});
