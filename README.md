@@ -53,7 +53,7 @@ npm start   # node src/http.js, listens on $PORT (default 8080)
 - `GET /` is the plugin's website, the listing's `websiteURL`.
 - `GET /healthz` returns `ok`.
 - `GET /.well-known/openai-apps-challenge` returns `$OPENAI_APPS_CHALLENGE` for directory domain verification, and 404s when it is unset.
-- `GET /stats` returns daily tool-call counts as JSON when `STATS_TOKEN` is set and sent as `Authorization: Bearer <token>`, and 404s otherwise. Counts only, never report contents; they reset on restart.
+- `GET /stats` returns daily tool-call counts and connections per announced MCP client name (`clients`) as JSON when `STATS_TOKEN` is set and sent as `Authorization: Bearer <token>`, and 404s otherwise. Counts only, never report contents; they reset on restart.
 - `render_client_report_pdf` returns a `download_url` under `/files/` instead of base64. Links are held in memory, expire after 15 minutes, and only the newest 500 are kept. Set `PUBLIC_URL` if the host does not forward `X-Forwarded-Proto`.
 - Each client gets 30 tool calls a minute, keyed on DigitalOcean's `do-connecting-ip` header. Past that, tool calls return a readable `isError` result saying when to retry.
 
